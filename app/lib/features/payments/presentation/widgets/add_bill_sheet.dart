@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 
 import '../../../sky/domain/entities/cloud_rule.dart';
+import 'cloud_words.dart';
 import 'peso.dart';
+import 'peso_input_formatter.dart';
 
 /// Name and amount for a new bill.
 ///
 /// The preview runs the month's own frozen rule against the balance, so
-/// "Adds 3 clouds" is exactly what the sky does when it saves — not
+/// "Adds 2 big clouds" is exactly what the sky does when it saves — not
 /// amount / denominator, which is wrong whenever the last cloud is part-used.
 class AddBillSheet extends StatefulWidget {
   const AddBillSheet({
@@ -110,6 +112,7 @@ class _AddBillSheetState extends State<AddBillSheet> {
             key: AddBillSheet.amountKey,
             controller: _amount,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: const [PesoInputFormatter()],
             textInputAction: TextInputAction.done,
             onSubmitted: (_) {
               if (_canSave) _save();
@@ -175,9 +178,7 @@ class _AddBillSheetState extends State<AddBillSheet> {
     );
   }
 
-  static String _preview(int clouds) => switch (clouds) {
-        0 => 'Fits in the clouds already there',
-        1 => 'Adds 1 cloud',
-        _ => 'Adds $clouds clouds',
-      };
+  static String _preview(int clouds) => clouds == 0
+      ? 'Fits in the clouds already there'
+      : 'Adds ${cloudPhrase(clouds)}';
 }

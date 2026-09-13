@@ -4,11 +4,15 @@ import '../controllers/sky_controller.dart';
 import 'cloud_path.dart';
 import 'cloud_pose.dart';
 import 'sky_palette.dart';
+import 'sun_shape.dart';
 
 class SkyPainter extends CustomPainter {
-  SkyPainter(this.sky) : super(repaint: sky);
+  SkyPainter(this.sky, {this.topInset = 0}) : super(repaint: sky);
 
   final SkyController sky;
+
+  /// The notch or status bar height. Clouds are laid out below it.
+  final double topInset;
 
   static final Path _cloud = buildCloudPath();
   static final Paint _paint = Paint()..isAntiAlias = true;
@@ -18,6 +22,7 @@ class SkyPainter extends CustomPainter {
     // Clouds are authored ~100 units wide; normalise to the sky's width so the
     // layout holds on any screen.
     final unit = size.width / 320;
+    final stage = skyStage(size, topInset: topInset);
     final cloud = paletteFor(sky.gloom).cloud;
 
     for (final s in sky.sprites) {
@@ -26,11 +31,9 @@ class SkyPainter extends CustomPainter {
 
       _paint.color = cloud.withValues(alpha: pose.alpha);
 
+      final at = stagePoint(stage, pose.center);
       canvas.save();
-      canvas.translate(
-        pose.center.dx * size.width,
-        pose.center.dy * size.height + pose.dy * unit,
-      );
+      canvas.translate(at.dx, at.dy + pose.dy * unit);
       // Non-uniform on purpose: the squash is the anticipation beat. This is
       // also why drawAtlas is the wrong optimisation here — RSTransform only
       // carries uniform scale and would flatten it away.
@@ -48,7 +51,7 @@ class SkyPainter extends CustomPainter {
       if (alpha <= 0.01) continue;
       _paint.color = cloud.withValues(alpha: alpha);
       canvas.drawCircle(
-        Offset(p.position.dx * size.width, p.position.dy * size.height),
+        stagePoint(stage, p.position),
         p.radius * (1 + 0.8 * k) * sky.scale * unit,
         _paint,
       );
@@ -60,5 +63,6 @@ class SkyPainter extends CustomPainter {
   // all. This method only governs the case where the widget itself is rebuilt
   // for some unrelated reason.
   @override
-  bool shouldRepaint(SkyPainter oldDelegate) => oldDelegate.sky != sky;
+  bool shouldRepaint(SkyPainter oldDelegate) =>
+      oldDelegate.sky != sky || oldDelegate.topInset != topInset;
 }

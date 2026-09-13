@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'peso.dart';
+import 'peso_input_formatter.dart';
 
 /// Picks a month to start, and a rough total that sizes its clouds.
 ///
@@ -18,6 +19,7 @@ class NewMonthSheet extends StatefulWidget {
 
   static const Key previousYearKey = ValueKey('new-month-previous-year');
   static const Key nextYearKey = ValueKey('new-month-next-year');
+  static const Key estimateKey = ValueKey('new-month-estimate');
 
   final DateTime initialPeriod;
 
@@ -159,8 +161,10 @@ class _NewMonthSheetState extends State<NewMonthSheet> {
           ),
           const SizedBox(height: 18),
           TextField(
+            key: NewMonthSheet.estimateKey,
             controller: _estimate,
             keyboardType: const TextInputType.numberWithOptions(decimal: true),
+            inputFormatters: const [PesoInputFormatter()],
             decoration: InputDecoration(
               labelText: 'Roughly how much this month?',
               prefixText: '₱ ',

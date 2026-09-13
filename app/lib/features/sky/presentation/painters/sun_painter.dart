@@ -2,19 +2,27 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
-import '../../domain/usecases/layout_clouds.dart';
 import '../controllers/sky_controller.dart';
 import 'sky_palette.dart';
+import 'sun_shape.dart';
 
 /// Everything behind the clouds: the sky itself, the sun's warm glow, the
-/// all-clear rings, and the sun.
+/// all-clear rings, and the flame-ringed sun.
 ///
 /// Subscribed to the controller like SkyPainter, so the sun's pulse and the
 /// sky's colour animate without rebuilding any widgets.
 class SunPainter extends CustomPainter {
-  SunPainter(this.sky) : super(repaint: sky);
+  SunPainter(this.sky, {this.topInset = 0}) : super(repaint: sky);
 
   final SkyController sky;
+
+  /// The notch or status bar height. The sky's colour fills behind it; the
+  /// sun is laid out below it.
+  final double topInset;
+
+  /// The flames at a disc radius of 1, built once. Each frame scales and
+  /// rotates this rather than rebuilding it.
+  static final Path _flames = buildSunFlames(radius: 1);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -33,10 +41,8 @@ class SunPainter extends CustomPainter {
         ).createShader(rect),
     );
 
-    final c = Offset(
-      size.width * sunUnitCenter.dx,
-      size.height * sunUnitCenter.dy,
-    );
+    final sun = sunLayout(size, topInset: topInset);
+    final c = sun.center;
 
     // Rises and falls back over the celebration, overshooting early.
     final bloom = f > 0 && f < 1 ? math.sin(math.pi * f) * (1 - 0.4 * f) : 0.0;
@@ -64,7 +70,7 @@ class SunPainter extends CustomPainter {
         final spread = Curves.easeOutCubic.transform(k);
         canvas.drawCircle(
           c,
-          size.shortestSide * 0.25 + spread * size.longestSide * 0.9,
+          sun.radius * 1.5 + spread * size.longestSide * 0.9,
           Paint()
             ..style = PaintingStyle.stroke
             ..strokeWidth = size.shortestSide * 0.05 * (1 - k)
@@ -73,47 +79,36 @@ class SunPainter extends CustomPainter {
       }
     }
 
-    final pulse = sky.sunPulse.clamp(-0.6, 1.5);
-    final r = size.shortestSide *
-        0.22 *
-        (1 + 0.12 * clarity) *
-        (1 + 0.06 * pulse) *
-        (1 + 0.2 * bloom);
+    final pulse = sky.sunPulse.clamp(-0.6, sunPulseMax);
+    // Every factor here is bounded by maxSunSwell, which is what sunLayout
+    // sized the sun against. Grow it past that and the flames reach the notch.
+    final r = sun.radius *
+        (1 + sunClaritySwell * clarity) *
+        (1 + sunPulseSwell * pulse) *
+        (1 + sunBloomSwell * bloom);
 
-    final rays = Paint()
-      ..color = palette.sunRay.withValues(alpha: 0.3 + 0.7 * clarity)
-      ..strokeWidth = size.shortestSide * 0.025
-      ..strokeCap = StrokeCap.round;
+    // One tongue's turn over the finale. The ring repeats every tongue, so the
+    // end pose matches the start and nothing snaps afterwards.
+    final spin = Curves.easeInOutCubic.transform(f) * 2 * math.pi / sunTongues;
 
-    // An eighth of a turn over the finale. Eight rays repeat every eighth, so
-    // the end pose is identical to the start and nothing snaps afterwards.
-    final spin = Curves.easeInOutCubic.transform(f) * math.pi / 4;
-    final reach = size.shortestSide *
-        0.06 *
-        (0.6 + 0.4 * clarity) *
-        (1 + 0.6 * bloom + 0.15 * math.max(0, pulse));
-    for (var i = 0; i < 8; i++) {
-      final a = spin + i * math.pi / 4;
-      final inner = r * 1.35;
-      final outer = inner + reach;
-      canvas.drawLine(
-        c + Offset(math.cos(a) * inner, math.sin(a) * inner),
-        c + Offset(math.cos(a) * outer, math.sin(a) * outer),
-        rays,
-      );
-    }
-
-    canvas.drawCircle(
-      c,
-      r * 1.3,
+    canvas.save();
+    canvas.translate(c.dx, c.dy);
+    canvas.rotate(spin);
+    canvas.scale(r);
+    canvas.drawPath(
+      _flames,
       Paint()
-        ..color = palette.sunCore.withValues(
-          alpha: (0.16 * clarity + 0.2 * bloom).clamp(0.0, 1.0),
-        ),
+        ..isAntiAlias = true
+        // Flames fade back in a storm more than the disc does, so a heavy
+        // month reads as a sun smothered rather than just a darker one.
+        ..color = palette.sunCore.withValues(alpha: 0.55 + 0.45 * clarity),
     );
+    canvas.restore();
+
     canvas.drawCircle(c, r, Paint()..color = palette.sunCore);
   }
 
   @override
-  bool shouldRepaint(SunPainter oldDelegate) => oldDelegate.sky != sky;
+  bool shouldRepaint(SunPainter oldDelegate) =>
+      oldDelegate.sky != sky || oldDelegate.topInset != topInset;
 }

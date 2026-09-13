@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../../domain/entities/month.dart';
+import 'cloud_words.dart';
 
 class MonthDrawer extends StatelessWidget {
   const MonthDrawer({
@@ -37,9 +38,7 @@ class MonthDrawer extends StatelessWidget {
                 selected: m.id == currentId,
                 title: Text(_label(m.period), style: const TextStyle(fontSize: 14)),
                 subtitle: Text(
-                  m.cloudCount == 0
-                      ? 'Clear'
-                      : '${m.cloudCount} clouds',
+                  cloudSummary(m.cloudCount),
                   style: const TextStyle(fontSize: 12),
                 ),
                 onTap: () {

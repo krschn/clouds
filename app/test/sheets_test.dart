@@ -54,12 +54,17 @@ void main() {
       // 1,500 + 600 = 2,100 → 3 clouds, one more than now.
       await tester.enterText(find.byKey(AddBillSheet.amountKey), '600');
       await tester.pump();
-      expect(find.text('Adds 1 cloud'), findsOneWidget);
+      expect(find.text('Adds 1 small cloud'), findsOneWidget);
 
-      // 1,500 + 2,600 = 4,100 → 5 clouds.
+      // 1,500 + 2,600 = 4,100 → 5 clouds, three more.
       await tester.enterText(find.byKey(AddBillSheet.amountKey), '2600');
       await tester.pump();
-      expect(find.text('Adds 3 clouds'), findsOneWidget);
+      expect(find.text('Adds 3 small clouds'), findsOneWidget);
+
+      // 1,500 + 10,000 = 11,500 → 12 clouds, ten more: two big ones.
+      await tester.enterText(find.byKey(AddBillSheet.amountKey), '10000');
+      await tester.pump();
+      expect(find.text('Adds 2 big clouds'), findsOneWidget);
     });
 
     testWidgets('saves centavos and blocks a double tap while saving',
@@ -193,6 +198,65 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(savedEstimate, isNull);
+    });
+  });
+
+  group('money fields only take amounts', () {
+    const rule = CloudRule(centavosPerCloud: 100000, maxClouds: 12);
+
+    Future<void> pumpAddBill(WidgetTester tester) => tester.pumpWidget(
+          host(
+            AddBillSheet(
+              rule: rule,
+              outstandingCentavos: 0,
+              onSave: (_, __) async => true,
+            ),
+          ),
+        );
+
+    Future<void> pumpNewMonth(WidgetTester tester) => tester.pumpWidget(
+          host(
+            SingleChildScrollView(
+              child: NewMonthSheet(
+                initialPeriod: DateTime(2026, 11),
+                isTaken: (_) => false,
+                initialEstimateCentavos: null,
+                onSave: (_, __) async => true,
+              ),
+            ),
+          ),
+        );
+
+    final fields = <String, (Future<void> Function(WidgetTester), Key)>{
+      'bill amount': (pumpAddBill, AddBillSheet.amountKey),
+      'month estimate': (pumpNewMonth, NewMonthSheet.estimateKey),
+    };
+
+    fields.forEach((name, field) {
+      final (pump, key) = field;
+
+      testWidgets('$name drops letters and symbols', (tester) async {
+        await pump(tester);
+
+        await tester.enterText(find.byKey(key), 'a1b2,5c00.5x0!');
+        await tester.pump();
+
+        expect(find.text('12,500.50'), findsOneWidget);
+      });
+
+      testWidgets('$name keeps one decimal point and two places',
+          (tester) async {
+        await pump(tester);
+
+        await tester.enterText(find.byKey(key), '1.25');
+        await tester.enterText(find.byKey(key), '1.256');
+        await tester.pump();
+        expect(find.text('1.25'), findsOneWidget);
+
+        await tester.enterText(find.byKey(key), '1.2.5');
+        await tester.pump();
+        expect(find.text('1.25'), findsOneWidget);
+      });
     });
   });
 }

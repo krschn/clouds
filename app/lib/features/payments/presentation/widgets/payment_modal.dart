@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../domain/entities/payment.dart';
+import 'cloud_words.dart';
 import 'peso.dart';
 
 /// Hold-to-clear. 700ms is near the floor for a gesture that should feel
@@ -47,6 +48,11 @@ class _PaymentModalState extends State<PaymentModal>
   int _quarters = 0;
 
   void _onFill() {
+    // Once committed, the hold is over. The finger lifting, or the gesture
+    // being cancelled as the sheet closes, drains the bar back down — and
+    // reporting that would make clouds that survived the clear tremble, stuck
+    // wherever the drain was when the sheet was disposed.
+    if (_done) return;
     widget.onHoldProgress?.call(_fill.value);
     final quarters = (_fill.value * 4).floor().clamp(0, 3);
     if (quarters > _quarters && _fill.status == AnimationStatus.forward) {
@@ -94,7 +100,7 @@ class _PaymentModalState extends State<PaymentModal>
           ),
           const SizedBox(height: 4),
           Text(
-            n == 1 ? 'Clears 1 cloud' : 'Clears $n clouds',
+            'Clears ${cloudPhrase(n)}',
             style: const TextStyle(fontSize: 13, color: Color(0xFF5F6E80)),
           ),
           const SizedBox(height: 16),

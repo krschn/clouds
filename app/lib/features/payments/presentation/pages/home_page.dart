@@ -11,6 +11,7 @@ import '../../domain/entities/payment.dart';
 import '../controllers/month_controller.dart';
 import '../widgets/add_bill_sheet.dart';
 import '../widgets/cloud_add_button.dart';
+import '../widgets/cloud_words.dart';
 import '../widgets/month_drawer.dart';
 import '../widgets/new_month_sheet.dart';
 import '../widgets/payment_modal.dart';
@@ -108,11 +109,17 @@ class HomePage extends StatelessWidget {
         // Launched clouds start under whichever cloud was tapped, in the
         // sky's unit coordinates. Assigned rather than notified: the sky only
         // reads it when a bill is added.
+        // Sky coordinates are measured in the area below the notch (see
+        // skyStage), so the launch point goes through the same inset.
+        final topInset = MediaQuery.paddingOf(context).top;
         sky.launchFrom = empty
             ? Offset(
                 0.5,
-                (skyHeight + listHeight / 2 - _EmptyCloud.centreAboveMiddle) /
-                    skyHeight,
+                (skyHeight +
+                        listHeight / 2 -
+                        _EmptyCloud.centreAboveMiddle -
+                        topInset) /
+                    (skyHeight - topInset),
               )
             : Offset(
                 (box.maxWidth - _addButtonInset - _addButtonSize.width / 2) /
@@ -155,7 +162,7 @@ class HomePage extends StatelessWidget {
                             sky: sky,
                             text: month.cloudCount == 0
                                 ? 'Cleared'
-                                : '${month.cloudCount} clouds  ·  '
+                                : '${cloudSummary(month.cloudCount)}  ·  '
                                     '${formatPeso(month.outstandingCentavos)}',
                           ),
                         ),

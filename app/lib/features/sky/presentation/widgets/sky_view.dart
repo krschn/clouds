@@ -13,6 +13,10 @@ class SkyView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // The sky sits at the very top of the screen. Its colour runs up behind
+    // the status bar, but the sun and clouds stay below the notch.
+    final topInset = MediaQuery.paddingOf(context).top;
+
     // The boundary stops the payment list below from joining the sky's repaint
     // every frame.
     return RepaintBoundary(
@@ -20,8 +24,8 @@ class SkyView extends StatelessWidget {
         child: Stack(
           fit: StackFit.expand,
           children: [
-            CustomPaint(painter: SunPainter(controller)),
-            CustomPaint(painter: SkyPainter(controller)),
+            CustomPaint(painter: SunPainter(controller, topInset: topInset)),
+            CustomPaint(painter: SkyPainter(controller, topInset: topInset)),
           ],
         ),
       ),

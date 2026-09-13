@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';
 
-Future<void> pumpHome(WidgetTester tester, List<Month> months) async {
+Future<SkyController> pumpHome(WidgetTester tester, List<Month> months) async {
   final sky = SkyController(
     vsync: const TestVSync(),
     rule: const CloudRule(centavosPerCloud: 100000, maxClouds: 12),
@@ -31,6 +31,7 @@ Future<void> pumpHome(WidgetTester tester, List<Month> months) async {
     MaterialApp(home: HomePage(controller: controller, sky: sky)),
   );
   await tester.pump();
+  return sky;
 }
 
 /// The sheets slide up; the add button bobs forever, so never pumpAndSettle.
@@ -76,5 +77,48 @@ void main() {
 
     expect(find.byType(CloudAddButton), findsOneWidget);
     expect(find.text('Add your first bill'), findsNothing);
+  });
+
+  testWidgets('the caption counts big and small clouds', (tester) async {
+    await pumpHome(tester, [
+      monthOf('sep', DateTime(2026, 9), [
+        bill('internet', 1000000),
+        bill('water', 300000),
+      ]),
+    ]);
+
+    expect(find.text('2 big, 3 small  ·  ₱13,000'), findsOneWidget);
+  });
+
+  group('after a hold clears a bill, no remaining cloud keeps trembling', () {
+    // 0.76s lets go while the sheet is still sliding away; 1.5s holds on
+    // until it has gone.
+    for (final releaseAfter in [0.76, 1.5]) {
+      testWidgets('letting go after ${releaseAfter}s', (tester) async {
+        final sky = await pumpHome(tester, [
+          monthOf('sep', DateTime(2026, 9), [
+            bill('internet', 1000000),
+            bill('rent', 700000),
+          ]),
+        ]);
+
+        await tester.tap(find.text('internet'));
+        await openSheet(tester);
+
+        final finger = await tester.startGesture(
+          tester.getCenter(find.text('Hold to clear')),
+        );
+        await settle(tester, seconds: releaseAfter);
+        await finger.up();
+        await settle(tester, seconds: 3);
+
+        final remaining = sky.sprites.where((s) => !s.exiting).toList();
+        expect(remaining, isNotEmpty);
+        expect(
+          remaining.where((s) => s.tension > 0).map((s) => s.tension),
+          isEmpty,
+        );
+      });
+    }
   });
 }
