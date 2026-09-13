@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import '../../../sky/presentation/painters/cloud_path.dart';
 import '../../../sky/presentation/painters/sky_palette.dart';
 import '../../domain/entities/month.dart';
-import 'cloud_add_button.dart';
 import 'cloud_card.dart';
 import 'peso.dart';
 
@@ -92,26 +91,26 @@ class MonthDrawer extends StatelessWidget {
                     Navigator.of(context).pop();
                     onNewMonth();
                   },
-                  child: Row(
-                    children: [
-                      CloudAddButton(
-                        size: const Size(56, 40),
-                        semanticLabel: 'New month',
-                        onPressed: () {
-                          Navigator.of(context).pop();
-                          onNewMonth();
-                        },
-                      ),
-                      const SizedBox(width: 10),
-                      const Text(
-                        'New month',
-                        style: TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w600,
-                          color: _navy,
+                  // One cloud card that says what it does, like the months
+                  // above it — not the home screen's "+" cloud, which adds
+                  // bills.
+                  child: const CloudCard(
+                    fill: Color(0xFFDCEAF7),
+                    puffs: _MonthCloud._puffs,
+                    rise: 12,
+                    child: Padding(
+                      padding: EdgeInsets.fromLTRB(16, 12, 16, 14),
+                      child: Center(
+                        child: Text(
+                          'Add month',
+                          style: TextStyle(
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                            color: _navy,
+                          ),
                         ),
                       ),
-                    ],
+                    ),
                   ),
                 ),
               ),

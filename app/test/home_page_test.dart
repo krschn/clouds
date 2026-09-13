@@ -178,6 +178,29 @@ void main() {
     );
   });
 
+  testWidgets('the drawer adds a month from one cloud that says so',
+      (tester) async {
+    await pumpHome(tester, [monthOf('sep', DateTime(2026, 9), const [])]);
+
+    await tester.tap(monthCloud);
+    await openSheet(tester);
+
+    // Not the home screen's "+" cloud: that one adds bills.
+    expect(
+      find.descendant(
+        of: find.byType(Drawer),
+        matching: find.byType(CloudAddButton),
+      ),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('Add month'));
+    await openSheet(tester);
+    await openSheet(tester);
+
+    expect(find.byType(NewMonthSheet), findsOneWidget);
+  });
+
   testWidgets('closing the sheet without clearing calms the clouds quietly',
       (tester) async {
     final sky = await pumpHome(tester, [
