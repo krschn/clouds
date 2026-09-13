@@ -18,20 +18,4 @@ void main() {
       });
     });
   });
-
-  group('cloudSummary', () {
-    const cases = {
-      0: 'Clear',
-      1: '1 small cloud',
-      4: '4 small clouds',
-      5: '1 big cloud',
-      10: '2 big clouds',
-      13: '2 big, 3 small',
-    };
-    cases.forEach((count, want) {
-      test('$count clouds read as "$want"', () {
-        expect(cloudSummary(count), want);
-      });
-    });
-  });
 }

@@ -32,7 +32,10 @@ class MonthController extends ChangeNotifier {
     state = LoadState.loading;
     notifyListeners();
     try {
-      months = await _repo.fetchMonths();
+      // Copied into a real List<Month>. The store hands back its own
+      // List<MonthModel>, and Dart checks callbacks against the runtime type,
+      // so a reduce or add with plain Months would throw on it.
+      months = List<Month>.of(await _repo.fetchMonths());
       current = months.isEmpty ? null : months.first;
       if (current != null) {
         _sky.updateRule(current!.rule);

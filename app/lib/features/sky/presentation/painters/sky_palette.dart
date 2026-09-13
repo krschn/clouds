@@ -26,7 +26,6 @@ class SkyPalette {
     required this.glow,
     required this.page,
     required this.ink,
-    required this.chip,
   });
 
   final Color skyTop;
@@ -41,11 +40,8 @@ class SkyPalette {
   /// Behind the bill list.
   final Color page;
 
-  /// Menu icon and caption text.
+  /// Menu icon.
   final Color ink;
-
-  /// Backing for the caption, so it stays readable over any sky.
-  final Color chip;
 
   bool get darkChrome => ink == _white;
 }
@@ -101,6 +97,5 @@ SkyPalette paletteFor(double gloom) {
       const Color(0xFFB4BFCA),
     ),
     ink: dark ? _white : _navy,
-    chip: dark ? const Color(0xFF2A3642) : const Color(0xFFF2F7FC),
   );
 }

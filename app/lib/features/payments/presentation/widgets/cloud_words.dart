@@ -13,12 +13,3 @@ String cloudPhrase(int count) {
   if (g.small == 0) return _sized(g.big, 'big');
   return '${_sized(g.big, 'big')} and ${g.small} small';
 }
-
-/// For the caption and the month list: "2 big, 3 small".
-String cloudSummary(int count) {
-  final g = cloudGroups(count);
-  if (g.big == 0 && g.small == 0) return 'Clear';
-  if (g.big == 0) return _sized(g.small, 'small');
-  if (g.small == 0) return _sized(g.big, 'big');
-  return '${g.big} big, ${g.small} small';
-}

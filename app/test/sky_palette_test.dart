@@ -82,12 +82,5 @@ void main() {
         expect(_contrast(p.ink, p.skyTop), greaterThanOrEqualTo(3), reason: '$g');
       }
     });
-
-    test('the caption stays readable on its chip', () {
-      for (final g in steps) {
-        final p = paletteFor(g);
-        expect(_contrast(p.ink, p.chip), greaterThanOrEqualTo(4.5), reason: '$g');
-      }
-    });
   });
 }

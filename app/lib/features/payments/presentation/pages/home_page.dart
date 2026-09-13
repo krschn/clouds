@@ -10,13 +10,13 @@ import '../../domain/entities/month.dart';
 import '../../domain/entities/payment.dart';
 import '../controllers/month_controller.dart';
 import '../widgets/add_bill_sheet.dart';
+import '../widgets/cleared_group.dart';
 import '../widgets/cloud_add_button.dart';
-import '../widgets/cloud_words.dart';
 import '../widgets/month_drawer.dart';
 import '../widgets/new_month_sheet.dart';
 import '../widgets/payment_modal.dart';
 import '../widgets/payment_tile.dart';
-import '../widgets/peso.dart';
+import '../widgets/total_cloud.dart';
 
 class HomePage extends StatelessWidget {
   const HomePage({required this.controller, required this.sky, super.key});
@@ -153,20 +153,6 @@ class HomePage extends StatelessWidget {
                           ),
                         ),
                       ),
-                      Positioned(
-                        left: 0,
-                        right: 0,
-                        bottom: 12,
-                        child: Center(
-                          child: _Caption(
-                            sky: sky,
-                            text: month.cloudCount == 0
-                                ? 'Cleared'
-                                : '${cloudSummary(month.cloudCount)}  ·  '
-                                    '${formatPeso(month.outstandingCentavos)}',
-                          ),
-                        ),
-                      ),
                     ],
                   ),
                 ),
@@ -179,21 +165,7 @@ class HomePage extends StatelessWidget {
                             onPressed: () => _openAddBill(context),
                           ),
                         )
-                      : ListView.separated(
-                          // Extra top padding keeps the first bill's amount
-                          // out from under the add button.
-                          padding: const EdgeInsets.fromLTRB(14, 38, 14, 14),
-                          itemCount: month.payments.length,
-                          separatorBuilder: (_, __) =>
-                              const SizedBox(height: 7),
-                          itemBuilder: (context, i) {
-                            final p = month.payments[i];
-                            return PaymentTile(
-                              payment: p,
-                              onTap: () => _openModal(context, p),
-                            );
-                          },
-                        ),
+                      : _billList(context, month),
                 ),
               ],
             ),
@@ -212,6 +184,45 @@ class HomePage extends StatelessWidget {
           ],
         );
       },
+    );
+  }
+
+  /// The total, then what is still owed, then everything already paid folded
+  /// into one group at the bottom.
+  Widget _billList(BuildContext context, Month month) {
+    final owed = [
+      for (final p in month.payments)
+        if (!p.isCleared) p,
+    ];
+    final cleared = [
+      for (final p in month.payments)
+        if (p.isCleared) p,
+    ];
+
+    return ListView(
+      // The add button hangs over the top edge; the total cloud keeps its
+      // flat right side clear of it.
+      padding: const EdgeInsets.fromLTRB(14, 18, 14, 14),
+      children: [
+        _FinalePop(
+          sky: sky,
+          child: TotalCloud(outstandingCentavos: month.outstandingCentavos),
+        ),
+        const SizedBox(height: 6),
+        for (final (i, p) in owed.indexed) ...[
+          const SizedBox(height: 8),
+          PaymentTile(
+            payment: p,
+            // Right first: the total cloud's puffs are on the left.
+            puffsOnRight: i.isEven,
+            onTap: () => _openModal(context, p),
+          ),
+        ],
+        if (cleared.isNotEmpty) ...[
+          const SizedBox(height: 20),
+          ClearedGroup(payments: cleared),
+        ],
+      ],
     );
   }
 
@@ -318,45 +329,26 @@ class _EmptyCloud extends StatelessWidget {
   }
 }
 
-/// The count under the sky, on a chip that flips light or dark with the sky
-/// so it stays readable at any gloom. Springs up when the finale plays.
-class _Caption extends StatelessWidget {
-  const _Caption({required this.sky, required this.text});
+/// Springs [child] up when the last cloud clears. Only the transform listens
+/// to the sky, which notifies every frame.
+class _FinalePop extends StatelessWidget {
+  const _FinalePop({required this.sky, required this.child});
 
   final SkyController sky;
-  final String text;
+  final Widget child;
 
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: sky,
-      builder: (context, _) {
-        final palette = paletteFor(sky.gloom);
+      child: child,
+      builder: (context, child) {
         final f = sky.finale;
+        // Smaller than a chip could take: this card spans the list.
         final pop = f > 0 && f < 1
-            ? math.sin(math.pi * math.min(1, f * 2.2)) * 0.22
+            ? math.sin(math.pi * math.min(1, f * 2.2)) * 0.05
             : 0.0;
-        return Transform.scale(
-          scale: 1 + pop,
-          child: AnimatedContainer(
-            // The chip swaps colour at one gloom threshold; a short fade
-            // keeps that from reading as a flicker.
-            duration: const Duration(milliseconds: 250),
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
-            decoration: BoxDecoration(
-              color: palette.chip,
-              borderRadius: BorderRadius.circular(999),
-            ),
-            child: Text(
-              text,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w500,
-                color: palette.ink,
-              ),
-            ),
-          ),
-        );
+        return Transform.scale(scale: 1 + pop, child: child);
       },
     );
   }

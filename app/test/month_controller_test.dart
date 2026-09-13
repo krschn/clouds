@@ -1,3 +1,4 @@
+import 'package:clouds/features/payments/data/models/month_model.dart';
 import 'package:clouds/features/payments/presentation/controllers/month_controller.dart';
 import 'package:clouds/features/sky/domain/entities/cloud_rule.dart';
 import 'package:clouds/features/sky/presentation/controllers/sky_controller.dart';
@@ -27,6 +28,34 @@ void main() {
   });
 
   tearDown(() => sky.dispose());
+
+  testWidgets('suggestions work on months the store hands back as its models',
+      (tester) async {
+    // The device store returns a List<MonthModel>. Kept as-is, a reduce with
+    // a Month callback throws at runtime once there are two months.
+    const rule = CloudRule(centavosPerCloud: 100000, maxClouds: 12);
+    final stored = MonthController(
+      repository: FakePaymentsRepository(<MonthModel>[
+        MonthModel(
+          id: 'aug',
+          period: DateTime(2026, 8),
+          rule: rule,
+          payments: const [],
+        ),
+        MonthModel(
+          id: 'sep',
+          period: DateTime(2026, 9),
+          rule: rule,
+          payments: const [],
+        ),
+      ]),
+      sky: sky,
+    );
+    await stored.load();
+
+    expect(stored.suggestedNewPeriod(), DateTime(2026, 10));
+    expect(stored.suggestedEstimateCentavos, 0);
+  });
 
   group('createMonth', () {
     testWidgets('inserts the month in date order and switches to it',
