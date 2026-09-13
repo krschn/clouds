@@ -29,6 +29,11 @@ class HomePage extends StatelessWidget {
   static const Size _addButtonSize = Size(84, 58);
   static const double _addButtonInset = 16;
 
+  static const List<String> _shortMonths = [
+    'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+    'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+  ];
+
   static const RoundedRectangleBorder _sheetShape = RoundedRectangleBorder(
     borderRadius: BorderRadius.vertical(top: Radius.circular(18)),
   );
@@ -141,13 +146,18 @@ class HomePage extends StatelessWidget {
                   child: Stack(
                     children: [
                       Positioned.fill(child: SkyView(controller: sky)),
+                      // The months drawer opens from a cloud that names the
+                      // month on screen, pairing with the add cloud opposite.
+                      // White with navy text, so it reads at any gloom.
                       SafeArea(
-                        child: Builder(
-                          builder: (context) => AnimatedBuilder(
-                            animation: sky,
-                            builder: (_, __) => IconButton(
-                              icon: const Icon(Icons.menu),
-                              color: paletteFor(sky.gloom).ink,
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(12, 6, 0, 0),
+                          child: Builder(
+                            builder: (context) => CloudAddButton(
+                              size: const Size(66, 46),
+                              bob: false,
+                              semanticLabel: 'Months',
+                              label: _shortMonths[month.period.month - 1],
                               onPressed: Scaffold.of(context).openDrawer,
                             ),
                           ),
@@ -274,12 +284,18 @@ class HomePage extends StatelessWidget {
 
     showModalBottomSheet<void>(
       context: context,
+      // Sized to its content. The push needs room to rise, and the default
+      // 9/16-of-the-screen cap would squeeze it on a short phone.
+      isScrollControlled: true,
+      useSafeArea: true,
       backgroundColor: Colors.white,
       shape: _sheetShape,
+      // Light enough that the clouds trembling above stay part of the push.
+      barrierColor: Colors.black.withValues(alpha: 0.12),
       builder: (_) => PaymentModal(
         payment: payment,
         cloudsRemoved: removed,
-        onHoldProgress: (v) => sky.setTension(removed, v),
+        onProgress: (v) => sky.setTension(removed, v),
         onCleared: () => controller.clear(payment),
       ),
     );

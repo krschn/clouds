@@ -40,7 +40,8 @@ class SkyPalette {
   /// Behind the bill list.
   final Color page;
 
-  /// Menu icon.
+  /// Whichever of navy or white stands out against the top of the sky. Picks
+  /// the status bar's tone through [darkChrome].
   final Color ink;
 
   bool get darkChrome => ink == _white;
@@ -71,7 +72,7 @@ SkyPalette paletteFor(double gloom) {
   );
 
   // Whichever of navy or white stands out more against the top of the sky,
-  // where the menu icon sits. The switch happens where both are about equal,
+  // under the status bar. The switch happens where both are about equal,
   // so it never reads as a jump.
   final top = skyTop.computeLuminance();
   final onNavy = (top + 0.05) / (_navy.computeLuminance() + 0.05);

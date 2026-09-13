@@ -76,7 +76,7 @@ void main() {
       }
     });
 
-    test('the menu icon stays visible against the sky', () {
+    test('the status bar stays visible against the sky', () {
       for (final g in steps) {
         final p = paletteFor(g);
         expect(_contrast(p.ink, p.skyTop), greaterThanOrEqualTo(3), reason: '$g');

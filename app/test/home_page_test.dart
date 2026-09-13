@@ -4,6 +4,7 @@ import 'package:clouds/features/payments/presentation/pages/home_page.dart';
 import 'package:clouds/features/payments/presentation/widgets/add_bill_sheet.dart';
 import 'package:clouds/features/payments/presentation/widgets/cloud_add_button.dart';
 import 'package:clouds/features/payments/presentation/widgets/new_month_sheet.dart';
+import 'package:clouds/features/payments/presentation/widgets/payment_modal.dart';
 import 'package:clouds/features/payments/presentation/widgets/total_cloud.dart';
 import 'package:clouds/features/sky/domain/entities/cloud_rule.dart';
 import 'package:clouds/features/sky/presentation/controllers/sky_controller.dart';
@@ -35,6 +36,16 @@ Future<SkyController> pumpHome(WidgetTester tester, List<Month> months) async {
   return sky;
 }
 
+/// The "+" clouds that add a month or a bill.
+final addClouds = find.byWidgetPredicate(
+  (w) => w is CloudAddButton && w.label == null,
+);
+
+/// The cloud at the top that names the month and opens the drawer.
+final monthCloud = find.byWidgetPredicate(
+  (w) => w is CloudAddButton && w.label != null,
+);
+
 /// The sheets slide up; the add button bobs forever, so never pumpAndSettle.
 Future<void> openSheet(WidgetTester tester) async {
   for (var i = 0; i < 30; i++) {
@@ -61,10 +72,10 @@ void main() {
       (tester) async {
     await pumpHome(tester, [monthOf('sep', DateTime(2026, 9), const [])]);
 
-    expect(find.byType(CloudAddButton), findsOneWidget);
+    expect(addClouds, findsOneWidget);
     expect(find.text('Add your first bill'), findsOneWidget);
 
-    await tester.tap(find.byType(CloudAddButton));
+    await tester.tap(addClouds);
     await openSheet(tester);
 
     expect(find.byType(AddBillSheet), findsOneWidget);
@@ -76,7 +87,7 @@ void main() {
       monthOf('sep', DateTime(2026, 9), [bill('rent', 200000)]),
     ]);
 
-    expect(find.byType(CloudAddButton), findsOneWidget);
+    expect(addClouds, findsOneWidget);
     expect(find.text('Add your first bill'), findsNothing);
   });
 
@@ -139,7 +150,8 @@ void main() {
       ]),
     ]);
 
-    await tester.tap(find.byIcon(Icons.menu));
+    // The drawer opens from the cloud naming the month on screen.
+    await tester.tap(monthCloud);
     await openSheet(tester);
 
     final drawer = find.byType(Drawer);
@@ -166,11 +178,41 @@ void main() {
     );
   });
 
-  group('after a hold clears a bill, no remaining cloud keeps trembling', () {
-    // 0.76s lets go while the sheet is still sliding away; 1.5s holds on
-    // until it has gone.
-    for (final releaseAfter in [0.76, 1.5]) {
-      testWidgets('letting go after ${releaseAfter}s', (tester) async {
+  testWidgets('closing the sheet without clearing calms the clouds quietly',
+      (tester) async {
+    final sky = await pumpHome(tester, [
+      monthOf('sep', DateTime(2026, 9), [
+        bill('internet', 1000000),
+        bill('rent', 700000),
+      ]),
+    ]);
+
+    await tester.tap(find.text('internet'));
+    await openSheet(tester);
+
+    // Hold a short push, so the clouds are trembling when the sheet goes.
+    final finger = await tester.startGesture(
+      tester.getCenter(find.byKey(PaymentModal.cloudKey)),
+    );
+    for (var i = 0; i < 5; i++) {
+      await finger.moveBy(const Offset(0, -12));
+      await tester.pump(const Duration(milliseconds: 16));
+    }
+    await finger.cancel();
+    await tester.pump(const Duration(milliseconds: 16));
+
+    // Tap the barrier above the sheet.
+    await tester.tapAt(const Offset(400, 60));
+    await settle(tester, seconds: 2);
+
+    expect(find.byType(PaymentModal), findsNothing);
+    expect(sky.sprites.where((s) => s.tension > 0), isEmpty);
+  });
+
+  group('after a swipe clears a bill, no remaining cloud keeps trembling', () {
+    for (final flick in [false, true]) {
+      testWidgets(flick ? 'a quick flick' : 'a slow push held past the detent',
+          (tester) async {
         final sky = await pumpHome(tester, [
           monthOf('sep', DateTime(2026, 9), [
             bill('internet', 1000000),
@@ -181,12 +223,24 @@ void main() {
         await tester.tap(find.text('internet'));
         await openSheet(tester);
 
-        final finger = await tester.startGesture(
-          tester.getCenter(find.text('Hold to clear')),
-        );
-        await settle(tester, seconds: releaseAfter);
-        await finger.up();
-        await settle(tester, seconds: 3);
+        final cloud = find.byKey(PaymentModal.cloudKey);
+        if (flick) {
+          await tester.fling(cloud, const Offset(0, -90), 1600);
+        } else {
+          final finger = await tester.startGesture(tester.getCenter(cloud));
+          for (var i = 0; i < 16; i++) {
+            await finger.moveBy(const Offset(0, -12));
+            await tester.pump(const Duration(milliseconds: 16));
+          }
+          // Held at the top with the clouds trembling, then let go.
+          await settle(tester, seconds: 0.6);
+          await finger.up();
+        }
+        // The clear lands only after the cloud has flown off, so give the
+        // bursts and the sun's pulse time to die down.
+        await settle(tester, seconds: 5);
+
+        expect(find.byType(PaymentModal), findsNothing);
 
         final remaining = sky.sprites.where((s) => !s.exiting).toList();
         expect(remaining, isNotEmpty);

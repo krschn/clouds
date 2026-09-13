@@ -9,12 +9,17 @@ import '../../../sky/presentation/painters/cloud_path.dart';
 ///
 /// It bobs while idle, squashes under a press and springs back on release,
 /// and recoils each time [recoil] notifies — once per cloud it launches.
+///
+/// With a [label] it carries that word instead of the "+", for the other
+/// cloud buttons on the screen.
 class CloudAddButton extends StatefulWidget {
   const CloudAddButton({
     required this.onPressed,
     this.recoil,
     this.size = const Size(84, 58),
     this.semanticLabel = 'Add bill',
+    this.label,
+    this.bob = true,
     super.key,
   });
 
@@ -22,6 +27,11 @@ class CloudAddButton extends StatefulWidget {
   final Listenable? recoil;
   final Size size;
   final String semanticLabel;
+  final String? label;
+
+  /// Idle bobbing. Off for a cloud that should sit still, so only one thing
+  /// on the screen is ever drifting for attention.
+  final bool bob;
 
   @override
   State<CloudAddButton> createState() => _CloudAddButtonState();
@@ -32,7 +42,7 @@ class _CloudAddButtonState extends State<CloudAddButton>
   late final AnimationController _bob = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2600),
-  )..repeat();
+  );
 
   late final AnimationController _press = AnimationController(
     vsync: this,
@@ -56,6 +66,7 @@ class _CloudAddButtonState extends State<CloudAddButton>
   @override
   void initState() {
     super.initState();
+    if (widget.bob) _bob.repeat();
     widget.recoil?.addListener(_onRecoil);
   }
 
@@ -111,7 +122,24 @@ class _CloudAddButtonState extends State<CloudAddButton>
           },
           child: CustomPaint(
             size: widget.size,
-            painter: const _CloudButtonPainter(),
+            painter: _CloudButtonPainter(plus: widget.label == null),
+            child: widget.label == null
+                ? null
+                : SizedBox.fromSize(
+                    size: widget.size,
+                    child: Align(
+                      // The cloud's body sits low, under its puffs.
+                      alignment: const Alignment(0.04, 0.34),
+                      child: Text(
+                        widget.label!,
+                        style: TextStyle(
+                          fontSize: widget.size.height * 0.3,
+                          fontWeight: FontWeight.w700,
+                          color: const Color(0xFF0C447C),
+                        ),
+                      ),
+                    ),
+                  ),
           ),
         ),
       ),
@@ -120,7 +148,9 @@ class _CloudAddButtonState extends State<CloudAddButton>
 }
 
 class _CloudButtonPainter extends CustomPainter {
-  const _CloudButtonPainter();
+  const _CloudButtonPainter({required this.plus});
+
+  final bool plus;
 
   static final Path _cloud = buildCloudPath();
 
@@ -141,19 +171,21 @@ class _CloudButtonPainter extends CustomPainter {
 
     canvas.drawShadow(path, const Color(0xFF203040), 6, false);
     canvas.drawPath(path, Paint()..color = Colors.white);
+    if (!plus) return;
 
     // Sized off the cloud so the "+" keeps its weight on the big empty-state
     // cloud as well as the small edge button.
-    final plus = Paint()
+    final pen = Paint()
       ..color = const Color(0xFF0C447C)
       ..strokeWidth = 3.7 * s
       ..strokeCap = StrokeCap.round;
     final center = Offset(cx + 2 * s, cy + 3 * s);
     final arm = 9.2 * s;
-    canvas.drawLine(center - Offset(arm, 0), center + Offset(arm, 0), plus);
-    canvas.drawLine(center - Offset(0, arm), center + Offset(0, arm), plus);
+    canvas.drawLine(center - Offset(arm, 0), center + Offset(arm, 0), pen);
+    canvas.drawLine(center - Offset(0, arm), center + Offset(0, arm), pen);
   }
 
   @override
-  bool shouldRepaint(_CloudButtonPainter oldDelegate) => false;
+  bool shouldRepaint(_CloudButtonPainter oldDelegate) =>
+      oldDelegate.plus != plus;
 }
