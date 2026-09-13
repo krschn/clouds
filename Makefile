@@ -29,8 +29,8 @@ help:
 	@echo "  make api        start the NestJS API on :3000  [run this first]"
 	@echo ""
 	@echo "  make web        run the Flutter app in Chrome on :$(WEB_PORT)"
-	@echo "  make ios        run on the iOS simulator"
-	@echo "  make android    run on the Android emulator"
+	@echo "  make ios        run on the iOS simulator (boots one if needed)"
+	@echo "  make android    run on the Android emulator (starts one if needed)"
 	@echo "  make device     run on a physical handset over the LAN"
 	@echo ""
 	@echo "  make test       run both test suites"
@@ -80,12 +80,15 @@ web:
 	cd $(APP) && flutter run -d chrome --web-port=$(WEB_PORT) \
 	  --dart-define=API_BASE_URL=$(HOST_API)
 
+# `flutter run -d ios` / `-d android` match nothing: -d takes a device name or
+# id, not a platform. device.sh resolves the id and boots a device if needed.
 ios:
-	@open -a Simulator
-	cd $(APP) && flutter run -d ios --dart-define=API_BASE_URL=$(HOST_API)
+	@id=$$(bash scripts/device.sh ios) && echo "Running on $$id" && \
+	  cd $(APP) && flutter run -d "$$id" --dart-define=API_BASE_URL=$(HOST_API)
 
 android:
-	cd $(APP) && flutter run -d android --dart-define=API_BASE_URL=$(EMU_API)
+	@id=$$(bash scripts/device.sh android) && echo "Running on $$id" && \
+	  cd $(APP) && flutter run -d "$$id" --dart-define=API_BASE_URL=$(EMU_API)
 
 device:
 	@test -n "$(LAN_IP)" || { echo "No LAN address on en0/en1 — are you on Wi-Fi?"; exit 1; }

@@ -56,6 +56,20 @@ class _AppState extends State<App> with SingleTickerProviderStateMixin {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true),
       home: HomePage(controller: _months, sky: _sky),
+      // The layout is a phone screen: a sky-over-list split with clouds sized
+      // off the sky's width. In a desktop browser the clouds grow taller than
+      // the sky and the list rows run the full window width. Capping the width
+      // keeps web looking like the phone app. The builder wraps the Navigator,
+      // so the drawer and bottom sheet stay inside the column as well.
+      builder: (context, child) => ColoredBox(
+        color: const Color(0xFFDCE6F0),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 480),
+            child: child,
+          ),
+        ),
+      ),
     );
   }
 }
