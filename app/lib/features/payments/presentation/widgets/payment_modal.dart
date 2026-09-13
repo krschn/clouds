@@ -14,8 +14,8 @@ import 'peso.dart';
 /// Clear a bill by pushing its cloud up off the sun.
 ///
 /// A hold only asks you to wait. Here the cloud follows the finger against a
-/// pull that stiffens the further it goes, the sun it was covering shows
-/// through and brightens, a detent clicks where letting go will clear, and on
+/// pull that stiffens the further it goes, the real sun above breaks through
+/// the clouds it will clear, a detent clicks where letting go will clear, and on
 /// release the cloud flies off into the sky before the sheet gets out of the
 /// way — so the bursts up there are the last thing that happens, not hidden
 /// behind a closing sheet.
@@ -63,7 +63,6 @@ class _PaymentModalState extends State<PaymentModal>
   static const double _restY = 132;
 
   static const Size _cloudSize = Size(230, 110);
-  static const Size _sunSize = Size(200, 176);
   static const Color _navy = Color(0xFF0C447C);
   static const Color _muted = Color(0xFF5F6E80);
 
@@ -77,7 +76,7 @@ class _PaymentModalState extends State<PaymentModal>
     duration: const Duration(milliseconds: 260),
   );
 
-  /// The idle peek that shows a sliver of sun, until the first touch.
+  /// The idle peek that hints the cloud lifts, until the first touch.
   late final AnimationController _nudge = AnimationController(
     vsync: this,
     duration: const Duration(milliseconds: 2400),
@@ -270,18 +269,6 @@ class _PaymentModalState extends State<PaymentModal>
           Positioned(
             left: 0,
             right: 0,
-            top: _restY - _sunSize.height / 2,
-            height: _sunSize.height,
-            child: Center(
-              child: CustomPaint(
-                size: _sunSize,
-                painter: _SunPainter(reveal: p, bloom: _fly.value),
-              ),
-            ),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
             top: _restY - _cloudSize.height / 2,
             height: _cloudSize.height,
             child: Center(child: _cloud(amount, p, f, lift)),
@@ -337,9 +324,9 @@ class _PaymentModalState extends State<PaymentModal>
               Transform.translate(
                 offset: Offset(0, -bob),
                 child: Icon(
-                  ready ? Icons.wb_sunny_rounded : Icons.keyboard_arrow_up,
+                  Icons.keyboard_arrow_up,
                   size: 20,
-                  color: ready ? const Color(0xFFEF9F27) : _muted,
+                  color: ready ? _navy : _muted,
                 ),
               ),
               const SizedBox(width: 4),
@@ -386,49 +373,4 @@ class _PaymentCloudPainter extends CustomPainter {
   @override
   bool shouldRepaint(_PaymentCloudPainter oldDelegate) =>
       oldDelegate.elevation != elevation;
-}
-
-/// The sun behind the bill. Brightens and turns as the cloud is pushed off
-/// it, and blooms when the cloud is let go.
-class _SunPainter extends CustomPainter {
-  const _SunPainter({required this.reveal, required this.bloom});
-
-  final double reveal;
-  final double bloom;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    // Tucked a little high, so no ray pokes out under the resting cloud.
-    final c = size.center(const Offset(0, -6));
-    final grow = 1 + 0.12 * reveal + 0.3 * Curves.easeOut.transform(bloom);
-    final r = 30 * grow;
-
-    canvas.drawCircle(
-      c,
-      r * 2,
-      Paint()
-        ..color = const Color(0xFFFFE2A6)
-            // No halo round the resting cloud: the glow is the push's reward.
-            .withValues(alpha: (0.8 * reveal + 0.5 * bloom).clamp(0.0, 1.0))
-        ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 18),
-    );
-
-    final ray = Paint()
-      ..color = const Color(0xFFFAC775)
-      ..strokeWidth = 5
-      ..strokeCap = StrokeCap.round;
-    final spin = reveal * 0.7 + bloom * 1.4;
-    const rays = 10;
-    for (var i = 0; i < rays; i++) {
-      final a = spin + i * 2 * math.pi / rays;
-      final dir = Offset(math.cos(a), math.sin(a));
-      canvas.drawLine(c + dir * (r + 7), c + dir * (r + 7 + 8 * grow), ray);
-    }
-
-    canvas.drawCircle(c, r, Paint()..color = const Color(0xFFEF9F27));
-  }
-
-  @override
-  bool shouldRepaint(_SunPainter oldDelegate) =>
-      oldDelegate.reveal != reveal || oldDelegate.bloom != bloom;
 }

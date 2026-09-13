@@ -25,6 +25,38 @@ void main() {
   tearDown(() => sky.dispose());
 
   group('hold tension', () {
+    testWidgets('a push charges the sun, and it eases back on letting go',
+        (tester) async {
+      sky.syncTo(4, animate: false);
+
+      sky.setTension(2, 1);
+      await settle(tester, seconds: 0.6);
+      expect(sky.charge, closeTo(1, 0.01));
+
+      sky.setTension(2, 0);
+      await tester.pump(const Duration(milliseconds: 16));
+      await tester.pump(const Duration(milliseconds: 16));
+      expect(
+        sky.charge,
+        inExclusiveRange(0.0, 1.0),
+        reason: 'eases, not blinks',
+      );
+
+      await settle(tester, seconds: 1);
+      expect(sky.charge, 0);
+    });
+
+    testWidgets('switching months drops the charge at once', (tester) async {
+      sky.syncTo(4, animate: false);
+      sky.setTension(2, 1);
+      await settle(tester, seconds: 0.6);
+
+      sky.syncTo(6, animate: false);
+
+      expect(sky.charge, 0);
+      await settle(tester, seconds: 1);
+    });
+
     testWidgets('the clouds that tremble are the ones that then leave',
         (tester) async {
       sky.syncTo(4, animate: false);

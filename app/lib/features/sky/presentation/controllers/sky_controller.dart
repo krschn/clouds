@@ -68,6 +68,10 @@ class SkyController extends ChangeNotifier {
   /// How quickly the colours chase the cloud count, per second.
   static const double _glideRate = 3.5;
 
+  /// How quickly the sun's charge follows the push. Quick enough to feel tied
+  /// to the finger, slow enough to ease back rather than blink off.
+  static const double _chargeRate = 10;
+
   /// The sun's pulse is a damped spring; each burst is an impulse into it.
   static const double _pulseStiffness = 180;
   static const double _pulseDamping = 14;
@@ -91,6 +95,8 @@ class SkyController extends ChangeNotifier {
   double _finale = 0;
   bool _finaleArmed = false;
   bool _finaleRunning = false;
+  double _charge = 0;
+  double _chargeTarget = 0;
 
   /// Where newly added clouds are thrown from, in unit sky coordinates. Set by
   /// the page that knows where the add button is; null means clouds drop in.
@@ -120,6 +126,10 @@ class SkyController extends ChangeNotifier {
   /// The sun's spring displacement; positive is swollen.
   double get sunPulse => _pulse;
 
+  /// 0 → 1 how hard a pending clear is being pushed. The sun breaks through
+  /// the gloom with it, so the push lights the real sky rather than a stand-in.
+  double get charge => _charge;
+
   /// 0 → 1 progress of the all-clear celebration. Stays at 1 once it has
   /// played, and returns to 0 when clouds come back or the month changes.
   double get finale => _finale;
@@ -141,6 +151,9 @@ class SkyController extends ChangeNotifier {
     for (final s in _sprites) {
       s.tension = 0;
     }
+    // The charge eases back as the clear plays; a month switch drops it.
+    _chargeTarget = 0;
+    if (!animate) _charge = 0;
 
     final from = _liveGroups();
     final to = cloudGroups(targetCount);
@@ -178,7 +191,8 @@ class SkyController extends ChangeNotifier {
     for (final s in _sprites) {
       if (!s.exiting) s.tension = shaking.contains(s) ? amount : 0;
     }
-    if (amount > 0) _start();
+    _chargeTarget = count > 0 ? amount : 0;
+    if (amount > 0 || _charge != _chargeTarget) _start();
     notifyListeners();
   }
 
@@ -231,9 +245,7 @@ class SkyController extends ChangeNotifier {
       // Crossing a multiple of five: the loose small clouds fly together and
       // a big cloud swells up where they meet. Only reachable when animating,
       // since a non-animated sync starts from an empty sky.
-      final loose = _sprites
-          .where((s) => !s.exiting && s.units == 1)
-          .toList()
+      final loose = _sprites.where((s) => !s.exiting && s.units == 1).toList()
         ..sort((a, b) => a.distanceFromSun.compareTo(b.distanceFromSun));
       taken.removeAll(loose.map((s) => s.slot));
 
@@ -495,6 +507,13 @@ class SkyController extends ChangeNotifier {
     _pulseVelocity += accel * dt;
     _pulse += _pulseVelocity * dt;
     if (_pulse.abs() > 1e-3 || _pulseVelocity.abs() > 1e-3) busy = true;
+
+    _charge += (_chargeTarget - _charge) * (1 - math.exp(-_chargeRate * dt));
+    if ((_chargeTarget - _charge).abs() > 1e-3) {
+      busy = true;
+    } else {
+      _charge = _chargeTarget;
+    }
 
     final target = _targetWeight();
     _shown += (target - _shown) * (1 - math.exp(-_glideRate * dt));

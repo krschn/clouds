@@ -28,6 +28,7 @@ class SunPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final palette = paletteFor(sky.gloom);
     final clarity = sky.clarity;
+    final charge = sky.charge;
     final f = sky.finale;
     final rect = Offset.zero & size;
 
@@ -62,6 +63,24 @@ class SunPainter extends CustomPainter {
         ).createShader(Rect.fromCircle(center: c, radius: glowRadius)),
     );
 
+    if (charge > 0) {
+      // A clear being pushed: warm light breaking through whatever the gloom.
+      // The sky's own glow fades out in a storm, so this one does not follow
+      // the palette.
+      final chargeRadius = sun.radius * (2.2 + 1.2 * charge);
+      canvas.drawCircle(
+        c,
+        chargeRadius,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              _chargeGlow.withValues(alpha: 0.75 * charge),
+              _chargeGlow.withValues(alpha: 0),
+            ],
+          ).createShader(Rect.fromCircle(center: c, radius: chargeRadius)),
+      );
+    }
+
     if (f > 0 && f < 1) {
       // Two rings, the second a beat behind, spreading past the sky's edge.
       for (final lag in const [0.0, 0.18]) {
@@ -91,6 +110,11 @@ class SunPainter extends CustomPainter {
     // end pose matches the start and nothing snaps afterwards.
     final spin = Curves.easeInOutCubic.transform(f) * 2 * math.pi / sunTongues;
 
+    // Charge restores the clear-day colour and full flames. It never grows the
+    // sun: the size factors above are what keep the flames off the notch.
+    final core = Color.lerp(palette.sunCore, _clearCore, 0.8 * charge)!;
+    final flameStrength = math.max(clarity, charge);
+
     canvas.save();
     canvas.translate(c.dx, c.dy);
     canvas.rotate(spin);
@@ -101,12 +125,15 @@ class SunPainter extends CustomPainter {
         ..isAntiAlias = true
         // Flames fade back in a storm more than the disc does, so a heavy
         // month reads as a sun smothered rather than just a darker one.
-        ..color = palette.sunCore.withValues(alpha: 0.55 + 0.45 * clarity),
+        ..color = core.withValues(alpha: 0.55 + 0.45 * flameStrength),
     );
     canvas.restore();
 
-    canvas.drawCircle(c, r, Paint()..color = palette.sunCore);
+    canvas.drawCircle(c, r, Paint()..color = core);
   }
+
+  static const Color _chargeGlow = Color(0xFFFFE2A6);
+  static final Color _clearCore = paletteFor(0).sunCore;
 
   @override
   bool shouldRepaint(SunPainter oldDelegate) =>
