@@ -1,4 +1,4 @@
-import 'package:cloud_payments/features/payments/presentation/widgets/cloud_words.dart';
+import 'package:clouds/features/payments/presentation/widgets/cloud_words.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 void main() {

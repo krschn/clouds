@@ -1,10 +1,8 @@
-# Cloud Payments — one-command dev workflows.
+# Clouds — one-command dev workflows.
 #
-# The only thing that really differs between the run targets is API_BASE_URL.
-# A browser and an iOS simulator share this machine's loopback; an Android
-# emulator does not (10.0.2.2 is its alias for the host); a physical handset
-# needs this machine's LAN address. Encoding that here means nobody has to
-# remember which is which.
+# The app keeps its months on the device (SharedPreferences), so the run
+# targets need nothing else running. The backend targets are still here for
+# work on the API; the app is not wired to it for now.
 
 APP      := app
 BACKEND  := backend
@@ -12,45 +10,43 @@ PG       := postgresql@17
 PGBIN    := /opt/homebrew/opt/$(PG)/bin
 WEB_PORT := 8080
 
-HOST_API := http://localhost:3000
-EMU_API  := http://10.0.2.2:3000
-# Lazy (=, not :=) so the LAN lookup only runs for the target that needs it.
-LAN_IP    = $(shell ipconfig getifaddr en0 2>/dev/null || ipconfig getifaddr en1 2>/dev/null)
-LAN_API   = http://$(LAN_IP):3000
-
-.PHONY: help setup db db-stop db-shell api web ios android device test test-app test-api doctor
+.PHONY: help setup setup-api db db-stop db-shell api web ios android device test test-app test-api doctor
 
 help:
-	@echo "Cloud Payments"
+	@echo "Clouds"
 	@echo ""
-	@echo "  make setup      one-time: deps for both sides, .env, database"
-	@echo ""
-	@echo "  make db         start Postgres (background service)"
-	@echo "  make api        start the NestJS API on :3000  [run this first]"
+	@echo "  make setup      one-time: Flutter deps"
 	@echo ""
 	@echo "  make web        run the Flutter app in Chrome on :$(WEB_PORT)"
 	@echo "  make ios        run on the iOS simulator (boots one if needed)"
 	@echo "  make android    run on the Android emulator (starts one if needed)"
-	@echo "  make device     run on a physical handset over the LAN"
+	@echo "  make device     run on a connected physical handset"
 	@echo ""
 	@echo "  make test       run both test suites"
 	@echo "  make doctor     check the toolchain"
 	@echo ""
-	@echo "The API must be running before the app; the app loads months on boot."
+	@echo "Backend (not needed to run the app):"
+	@echo "  make setup-api  one-time: pnpm deps, .env, Postgres role + database"
+	@echo "  make db         start Postgres (background service)"
+	@echo "  make api        start the NestJS API on :3000"
+	@echo ""
+	@echo "Months are saved on the device, so the app works offline."
 
 # ---------------------------------------------------------------- setup
 
 setup:
+	cd $(APP) && flutter pub get
+
+setup-api:
 	cd $(BACKEND) && pnpm install
 	cd $(BACKEND) && [ -f .env ] || cp .env.example .env
-	cd $(APP) && flutter pub get
 	@$(MAKE) db
 	@$(PGBIN)/psql -d postgres -tAc "SELECT 1 FROM pg_roles WHERE rolname='postgres'" | grep -q 1 \
 	  || $(PGBIN)/psql -d postgres -c "CREATE ROLE postgres WITH LOGIN SUPERUSER PASSWORD 'postgres';"
 	@$(PGBIN)/psql -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='cloud_payments'" | grep -q 1 \
 	  || $(PGBIN)/createdb -O postgres cloud_payments
 	@echo ""
-	@echo "Ready. Run 'make api' in one terminal, then 'make web' in another."
+	@echo "Ready. Run 'make api' to start the API."
 
 # ---------------------------------------------------------------- database
 
@@ -77,24 +73,20 @@ api: db
 # ---------------------------------------------------------------- app
 
 web:
-	cd $(APP) && flutter run -d chrome --web-port=$(WEB_PORT) \
-	  --dart-define=API_BASE_URL=$(HOST_API)
+	cd $(APP) && flutter run -d chrome --web-port=$(WEB_PORT)
 
 # `flutter run -d ios` / `-d android` match nothing: -d takes a device name or
 # id, not a platform. device.sh resolves the id and boots a device if needed.
 ios:
 	@id=$$(bash scripts/device.sh ios) && echo "Running on $$id" && \
-	  cd $(APP) && flutter run -d "$$id" --dart-define=API_BASE_URL=$(HOST_API)
+	  cd $(APP) && flutter run -d "$$id"
 
 android:
 	@id=$$(bash scripts/device.sh android) && echo "Running on $$id" && \
-	  cd $(APP) && flutter run -d "$$id" --dart-define=API_BASE_URL=$(EMU_API)
+	  cd $(APP) && flutter run -d "$$id"
 
 device:
-	@test -n "$(LAN_IP)" || { echo "No LAN address on en0/en1 — are you on Wi-Fi?"; exit 1; }
-	@echo "Handset will reach this machine at $(LAN_API)"
-	@echo "Both devices must be on the same network."
-	cd $(APP) && flutter run --dart-define=API_BASE_URL=$(LAN_API)
+	cd $(APP) && flutter run
 
 # ---------------------------------------------------------------- tests
 

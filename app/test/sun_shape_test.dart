@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-import 'package:cloud_payments/features/sky/presentation/painters/sun_shape.dart';
+import 'package:clouds/features/sky/presentation/painters/sun_shape.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 Offset polar(double r, double angle) =>

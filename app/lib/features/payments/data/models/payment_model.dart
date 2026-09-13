@@ -18,4 +18,21 @@ class PaymentModel extends Payment {
             : DateTime.parse(json['clearedAt'] as String),
         source: (json['source'] as String?) ?? 'manual',
       );
+
+  PaymentModel withClearedAt(DateTime at) => PaymentModel(
+        id: id,
+        label: label,
+        amountCentavos: amountCentavos,
+        clearedAt: at,
+        source: source,
+      );
+
+  Map<String, dynamic> toJson() => {
+        'id': id,
+        'label': label,
+        'amountCentavos': amountCentavos,
+        // UTC so the stored instant does not shift with the device's zone.
+        'clearedAt': clearedAt?.toUtc().toIso8601String(),
+        'source': source,
+      };
 }

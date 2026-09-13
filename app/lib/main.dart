@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'core/network/api_client.dart';
-import 'features/payments/data/datasources/payments_remote_datasource.dart';
-import 'features/payments/data/repositories/payments_repository_impl.dart';
+import 'features/payments/data/datasources/payments_local_datasource.dart';
+import 'features/payments/data/repositories/local_payments_repository.dart';
 import 'features/payments/presentation/controllers/month_controller.dart';
 import 'features/payments/presentation/pages/home_page.dart';
 import 'features/sky/domain/entities/cloud_rule.dart';
@@ -10,15 +10,20 @@ import 'features/sky/presentation/controllers/sky_controller.dart';
 
 // Deliberately no DI package. Swap in get_it, riverpod, or whatever the DTR
 // side settles on — nothing below the presentation layer knows or cares.
-const String kApiBaseUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://10.0.2.2:3000',
-);
-
-void main() => runApp(const App());
+//
+// Months live on the device, so the app needs no backend to run. To point it
+// at the API again, build the repository from PaymentsRepositoryImpl(
+// PaymentsRemoteDataSource(ApiClient(baseUrl: ...))) instead.
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  final prefs = await SharedPreferences.getInstance();
+  runApp(App(prefs: prefs));
+}
 
 class App extends StatefulWidget {
-  const App({super.key});
+  const App({required this.prefs, super.key});
+
+  final SharedPreferences prefs;
 
   @override
   State<App> createState() => _AppState();
@@ -30,9 +35,7 @@ class _AppState extends State<App> with SingleTickerProviderStateMixin {
     rule: const CloudRule(centavosPerCloud: 100000, maxClouds: 12),
   );
   late final MonthController _months = MonthController(
-    repository: PaymentsRepositoryImpl(
-      PaymentsRemoteDataSource(ApiClient(baseUrl: kApiBaseUrl)),
-    ),
+    repository: LocalPaymentsRepository(PaymentsLocalDataSource(widget.prefs)),
     sky: _sky,
   );
 

@@ -1,8 +1,8 @@
-import 'package:cloud_payments/features/payments/domain/entities/month.dart';
-import 'package:cloud_payments/features/payments/domain/entities/payment.dart';
-import 'package:cloud_payments/features/payments/domain/repositories/payments_repository.dart';
-import 'package:cloud_payments/features/sky/domain/entities/cloud_rule.dart';
-import 'package:cloud_payments/features/sky/presentation/controllers/sky_haptics.dart';
+import 'package:clouds/features/payments/domain/entities/month.dart';
+import 'package:clouds/features/payments/domain/entities/payment.dart';
+import 'package:clouds/features/payments/domain/repositories/payments_repository.dart';
+import 'package:clouds/features/sky/domain/entities/cloud_rule.dart';
+import 'package:clouds/features/sky/presentation/controllers/sky_haptics.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Pumps a frame at a time so the sky's ticker sees realistic 60fps deltas.

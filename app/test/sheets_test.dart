@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:cloud_payments/features/payments/presentation/widgets/add_bill_sheet.dart';
-import 'package:cloud_payments/features/payments/presentation/widgets/new_month_sheet.dart';
-import 'package:cloud_payments/features/sky/domain/entities/cloud_rule.dart';
+import 'package:clouds/features/payments/presentation/widgets/add_bill_sheet.dart';
+import 'package:clouds/features/payments/presentation/widgets/new_month_sheet.dart';
+import 'package:clouds/features/sky/domain/entities/cloud_rule.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

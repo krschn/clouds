@@ -1,6 +1,6 @@
 import 'dart:math' as math;
 
-import 'package:cloud_payments/features/sky/presentation/painters/sky_palette.dart';
+import 'package:clouds/features/sky/presentation/painters/sky_palette.dart';
 import 'package:flutter/painting.dart';
 import 'package:flutter_test/flutter_test.dart';
 

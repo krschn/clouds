@@ -1,4 +1,4 @@
-name: cloud_payments
+name: clouds
 description: Clearing repayments, drawn as clouds burning off a sun.
 publish_to: "none"
 version: 0.1.0
@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
   http: ^1.2.2
+  shared_preferences: ^2.5.5
 
 dev_dependencies:
   flutter_test:

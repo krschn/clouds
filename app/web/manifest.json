@@ -1,6 +1,6 @@
 {
-    "name": "cloud_payments",
-    "short_name": "cloud_payments",
+    "name": "Clouds",
+    "short_name": "Clouds",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

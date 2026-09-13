@@ -1,4 +1,4 @@
-package com.cloudpayments.cloud_payments
+package com.krschn.clouds
 
 import io.flutter.embedding.android.FlutterActivity
 

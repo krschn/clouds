@@ -1,5 +1,5 @@
-import 'package:cloud_payments/features/sky/domain/entities/cloud_sprite.dart';
-import 'package:cloud_payments/features/sky/presentation/painters/cloud_pose.dart';
+import 'package:clouds/features/sky/domain/entities/cloud_sprite.dart';
+import 'package:clouds/features/sky/presentation/painters/cloud_pose.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 CloudSprite sprite({

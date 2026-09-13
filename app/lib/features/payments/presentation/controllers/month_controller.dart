@@ -59,7 +59,7 @@ class MonthController extends ChangeNotifier {
   /// Creates an empty month and switches to it. Returns whether it worked, so
   /// the sheet can stay open with the choice intact when it did not.
   ///
-  /// [expectedTotalCentavos] only sizes the clouds. The server freezes that
+  /// [expectedTotalCentavos] only sizes the clouds. The store freezes that
   /// size at creation, so an empty month sent without an estimate would be
   /// stuck with the smallest denomination however large its bills turn out.
   Future<bool> createMonth(
@@ -99,7 +99,7 @@ class MonthController extends ChangeNotifier {
   int? get suggestedEstimateCentavos =>
       _latest?.payments.fold<int>(0, (sum, p) => sum + p.amountCentavos);
 
-  /// Periods are unique on the server; picking a taken one would be rejected.
+  /// Periods are unique; picking a taken one would be rejected.
   bool hasMonthFor(DateTime period) => months.any(
         (m) =>
             m.period.year == period.year && m.period.month == period.month,
@@ -109,7 +109,7 @@ class MonthController extends ChangeNotifier {
       ? null
       : months.reduce((a, b) => a.period.isAfter(b.period) ? a : b);
 
-  /// Optimistic clear: the clouds go immediately, and come back if the server
+  /// Optimistic clear: the clouds go immediately, and come back if the store
   /// disagrees. They come back by condensing — the evaporate played backwards,
   /// slower, in the same places — because a setback should not look like a
   /// new bill arriving.
@@ -133,9 +133,9 @@ class MonthController extends ChangeNotifier {
     try {
       final result = await _repo.clearPayment(month.id, payment.id);
 
-      // Reconcile against the server's own count. A mismatch here means
+      // Reconcile against the store's own count. A mismatch here means
       // something else touched this month — an external feed, another device —
-      // and the sky should follow the server, not our guess.
+      // and the sky should follow the store, not our guess.
       if (result.cloudCount != optimistic.cloudCount) {
         _sky.syncTo(result.cloudCount);
       }

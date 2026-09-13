@@ -1,4 +1,4 @@
-import 'package:cloud_payments/features/payments/presentation/widgets/payment_modal.dart';
+import 'package:clouds/features/payments/presentation/widgets/payment_modal.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 

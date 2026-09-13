@@ -12,7 +12,7 @@ class Month {
   final String id;
   final DateTime period;
 
-  /// Frozen at creation on the server. Editing it redraws the whole sky, so
+  /// Frozen at creation. Editing it redraws the whole sky, so
   /// the UI confirms first.
   final CloudRule rule;
   final List<Payment> payments;

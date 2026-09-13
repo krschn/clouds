@@ -1,6 +1,6 @@
-import 'package:cloud_payments/features/payments/presentation/controllers/month_controller.dart';
-import 'package:cloud_payments/features/sky/domain/entities/cloud_rule.dart';
-import 'package:cloud_payments/features/sky/presentation/controllers/sky_controller.dart';
+import 'package:clouds/features/payments/presentation/controllers/month_controller.dart';
+import 'package:clouds/features/sky/domain/entities/cloud_rule.dart';
+import 'package:clouds/features/sky/presentation/controllers/sky_controller.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 import 'support/fakes.dart';

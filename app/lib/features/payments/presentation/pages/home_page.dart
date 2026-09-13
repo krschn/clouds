@@ -73,7 +73,7 @@ class HomePage extends StatelessWidget {
               mainAxisSize: MainAxisSize.min,
               children: [
                 const Text(
-                  "Couldn't reach the server.",
+                  "Couldn't load your months.",
                   style: TextStyle(fontSize: 15),
                 ),
                 const SizedBox(height: 12),

@@ -6,8 +6,8 @@ import 'peso_input_formatter.dart';
 /// Picks a month to start, and a rough total that sizes its clouds.
 ///
 /// Months that already exist are disabled rather than rejected after the
-/// fact: the period is unique on the server, and a refusal there arrives as
-/// an unhelpful error.
+/// fact: the period is unique per month, and a refusal from the store arrives
+/// as an unhelpful error.
 class NewMonthSheet extends StatefulWidget {
   const NewMonthSheet({
     required this.initialPeriod,
