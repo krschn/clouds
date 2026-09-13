@@ -1,0 +1,3 @@
+allowBuilds:
+  # Its only postinstall is the Open Collective donation banner.
+  '@nestjs/core': false

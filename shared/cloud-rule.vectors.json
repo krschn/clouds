@@ -1,0 +1,17 @@
+{
+  "_comment": "Shared contract between the Dart and TypeScript CloudRule implementations. Both test suites read this file. If you change the rule in one language, the other repo's CI goes red.",
+  "minScale": 0.42,
+  "scaleTolerance": 0.000001,
+  "cases": [
+    { "name": "nothing owed", "centavosPerCloud": 100000, "maxClouds": 12, "outstandingCentavos": 0, "cloudCount": 0, "cloudScale": 1 },
+    { "name": "negative balance clamps to zero", "centavosPerCloud": 100000, "maxClouds": 12, "outstandingCentavos": -5000, "cloudCount": 0, "cloudScale": 1 },
+    { "name": "one centavo still costs a whole cloud", "centavosPerCloud": 100000, "maxClouds": 12, "outstandingCentavos": 1, "cloudCount": 1, "cloudScale": 1 },
+    { "name": "exact multiple does not round up", "centavosPerCloud": 100000, "maxClouds": 12, "outstandingCentavos": 400000, "cloudCount": 4, "cloudScale": 1 },
+    { "name": "one centavo short of a multiple", "centavosPerCloud": 100000, "maxClouds": 12, "outstandingCentavos": 399999, "cloudCount": 4, "cloudScale": 1 },
+    { "name": "exactly at capacity, no shrink", "centavosPerCloud": 100000, "maxClouds": 12, "outstandingCentavos": 1200000, "cloudCount": 12, "cloudScale": 1 },
+    { "name": "one over capacity, area preserved", "centavosPerCloud": 100000, "maxClouds": 12, "outstandingCentavos": 1300000, "cloudCount": 13, "cloudScale": 0.9607689228 },
+    { "name": "heavy month", "centavosPerCloud": 100000, "maxClouds": 12, "outstandingCentavos": 4500000, "cloudCount": 45, "cloudScale": 0.5163977795 },
+    { "name": "past the floor, clamps to minScale", "centavosPerCloud": 100000, "maxClouds": 12, "outstandingCentavos": 9000000, "cloudCount": 90, "cloudScale": 0.42 },
+    { "name": "same heavy month at a 5k denominator stays readable", "centavosPerCloud": 500000, "maxClouds": 12, "outstandingCentavos": 4500000, "cloudCount": 9, "cloudScale": 1 }
+  ]
+}
