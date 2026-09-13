@@ -21,8 +21,8 @@ make setup      # once: pnpm + pub deps, backend/.env, Postgres 17 role + databa
 
 make api        # terminal 1 — starts Postgres if needed, then the API on :3000
 make web        # terminal 2 — Chrome on :8080
-make ios        # ...or the iOS simulator
-make android    # ...or a running Android emulator
+make ios        # ...or the iOS simulator (boots one if needed)
+make android    # ...or the Android emulator (starts one if needed)
 make device     # ...or a physical handset on the same Wi-Fi
 
 make test       # both suites against the shared cloud-rule vectors
@@ -70,6 +70,17 @@ total painted area (`sqrt(maxClouds / n)`), so twenty clouds cover the same sky
 as twelve and a heavy month reads as finer grain instead of a number to parse.
 The floor is 0.42 — below that they look like lint.
 
+## Big clouds
+
+Every five clouds draw as one big cloud (`group_clouds.dart`). It is display
+only: the count, the caption, the darkness and both `CloudRule`s still work in
+single clouds, so nothing about it crosses the API or the shared vectors.
+
+Clearing into a big cloud splits it — it bursts, and the part still owed flies
+out of it as small clouds. Adding past a multiple of five gathers the loose
+small clouds into a new big one, which is not a clear: no bursts, no haptics
+beyond the landing tap.
+
 ## Why the sky is one painter
 
 Forty clouds as forty `AnimatedPositioned` widgets means forty
@@ -85,18 +96,16 @@ bottleneck anyway.
 
 ## Known rough edges
 
-- **Rollback animation.** A failed clear puts clouds back with the pop-in used
-  for new bills — cheerful, in a moment that should feel like a setback. Wants
-  a dedicated "condense" curve: evaporate played backwards, slower.
-- **Overflow placement.** Clouds past `maxClouds` spiral outward and get
-  clipped by the sky bounds. Fine up to roughly 2× capacity, visibly thin past
-  that.
+- **Very heavy months share spots.** Clouds stack in up to three layers of the
+  month's capacity, all inside the sky. Past that, extra clouds double up on
+  existing spots, so a month far over its estimate looks no busier than one at
+  3× — the caption carries the real count.
 - **No auth, no offline queue.** Every mutation assumes connectivity; the
   optimistic path rolls back rather than retrying.
 - **`suggestCentavosPerCloud` is a heuristic** and will want tuning against
   real balances. It is one function, called in one place, deliberately.
-- **Month creation isn't wired into the UI.** The drawer selects existing
-  months only; `POST /months` exists but nothing calls it.
+- **Month switches snap.** Changing month swaps the sky's colours instantly
+  rather than fading; the closing drawer covers most of it.
 
 ## API
 

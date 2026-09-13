@@ -19,6 +19,25 @@ class PaymentsRemoteDataSource {
     return MonthModel.fromJson(json);
   }
 
+  Future<MonthModel> createMonth(
+    DateTime period, {
+    int? expectedTotalCentavos,
+  }) async {
+    final y = period.year.toString().padLeft(4, '0');
+    final m = period.month.toString().padLeft(2, '0');
+    final json = await _api.post(
+      '/months',
+      body: {
+        // A date, not a timestamp: the column is `date`, and sending a local
+        // midnight as UTC could land on the previous day.
+        'period': '$y-$m-01',
+        if (expectedTotalCentavos != null)
+          'expectedTotalCentavos': expectedTotalCentavos,
+      },
+    ) as Map<String, dynamic>;
+    return MonthModel.fromJson(json);
+  }
+
   Future<PaymentModel> addPayment(
     String monthId, {
     required String label,

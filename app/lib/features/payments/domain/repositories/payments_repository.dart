@@ -4,6 +4,11 @@ import '../entities/payment.dart';
 abstract class PaymentsRepository {
   Future<List<Month>> fetchMonths();
   Future<Month> fetchMonth(String monthId);
+
+  /// [period] is normalised to its month. [expectedTotalCentavos] lets the
+  /// server pick a cloud size, which it then freezes on the month.
+  Future<Month> createMonth(DateTime period, {int? expectedTotalCentavos});
+
   Future<Payment> addPayment(
     String monthId, {
     required String label,

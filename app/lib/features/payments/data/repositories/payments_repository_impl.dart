@@ -15,6 +15,10 @@ class PaymentsRepositoryImpl implements PaymentsRepository {
   Future<Month> fetchMonth(String monthId) => _remote.fetchMonth(monthId);
 
   @override
+  Future<Month> createMonth(DateTime period, {int? expectedTotalCentavos}) =>
+      _remote.createMonth(period, expectedTotalCentavos: expectedTotalCentavos);
+
+  @override
   Future<Payment> addPayment(
     String monthId, {
     required String label,

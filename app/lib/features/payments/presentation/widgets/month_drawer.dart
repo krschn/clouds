@@ -7,12 +7,14 @@ class MonthDrawer extends StatelessWidget {
     required this.months,
     required this.currentId,
     required this.onSelect,
+    required this.onNewMonth,
     super.key,
   });
 
   final List<Month> months;
   final String? currentId;
   final ValueChanged<Month> onSelect;
+  final VoidCallback onNewMonth;
 
   @override
   Widget build(BuildContext context) {
@@ -45,6 +47,22 @@ class MonthDrawer extends StatelessWidget {
                   Navigator.of(context).pop();
                 },
               ),
+            const Divider(indent: 12, endIndent: 12),
+            ListTile(
+              leading: const Icon(Icons.add, color: Color(0xFF0C447C)),
+              title: const Text(
+                'New month',
+                style: TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: Color(0xFF0C447C),
+                ),
+              ),
+              onTap: () {
+                Navigator.of(context).pop();
+                onNewMonth();
+              },
+            ),
           ],
         ),
       ),
