@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 
-import '../../domain/entities/cloud_sprite.dart';
+import '../controllers/sky_controller.dart';
 import 'cloud_path.dart';
-import 'evaporate_curve.dart';
+import 'cloud_pose.dart';
+import 'sky_palette.dart';
+import 'sun_shape.dart';
 
 class SkyPainter extends CustomPainter {
-  SkyPainter({
-    required this.sprites,
-    required this.scale,
-    required Listenable repaint,
-  }) : super(repaint: repaint);
+  SkyPainter(this.sky, {this.topInset = 0}) : super(repaint: sky);
 
-  final List<CloudSprite> sprites;
-  final double scale;
+  final SkyController sky;
+
+  /// The notch or status bar height. Clouds are laid out below it.
+  final double topInset;
 
   static final Path _cloud = buildCloudPath();
   static final Paint _paint = Paint()..isAntiAlias = true;
@@ -22,36 +22,47 @@ class SkyPainter extends CustomPainter {
     // Clouds are authored ~100 units wide; normalise to the sky's width so the
     // layout holds on any screen.
     final unit = size.width / 320;
+    final stage = skyStage(size, topInset: topInset);
+    final cloud = paletteFor(sky.gloom).cloud;
 
-    for (final s in sprites) {
-      final exit = evaporateAt(s.t);
-      final enter = entryAt(s.entry);
-      final alpha = exit.alpha * enter.alpha;
-      if (alpha <= 0.01) continue;
+    for (final s in sky.sprites) {
+      final pose = poseOf(s, time: sky.time);
+      if (pose.alpha <= 0.01) continue;
 
-      _paint.color = Color.fromRGBO(255, 255, 255, alpha);
+      _paint.color = cloud.withValues(alpha: pose.alpha);
 
+      final at = stagePoint(stage, pose.center);
       canvas.save();
-      canvas.translate(
-        s.unitCenter.dx * size.width,
-        s.unitCenter.dy * size.height + exit.dy * unit,
-      );
-      // Non-uniform on purpose: the 1.06x / 0.90x squash is the anticipation
-      // beat. This is also why drawAtlas is the wrong optimisation here —
-      // RSTransform only carries uniform scale and would flatten it away.
+      canvas.translate(at.dx, at.dy + pose.dy * unit);
+      // Non-uniform on purpose: the squash is the anticipation beat. This is
+      // also why drawAtlas is the wrong optimisation here — RSTransform only
+      // carries uniform scale and would flatten it away.
       canvas.scale(
-        scale * exit.sx * enter.scale * unit,
-        scale * exit.sy * enter.scale * unit,
+        sky.scale * pose.sx * unit,
+        sky.scale * pose.sy * unit,
       );
       canvas.drawPath(_cloud, _paint);
       canvas.restore();
     }
+
+    for (final p in sky.puffs) {
+      final k = p.progress;
+      final alpha = (1 - k) * (1 - k) * 0.9;
+      if (alpha <= 0.01) continue;
+      _paint.color = cloud.withValues(alpha: alpha);
+      canvas.drawCircle(
+        stagePoint(stage, p.position),
+        p.radius * (1 + 0.8 * k) * sky.scale * unit,
+        _paint,
+      );
+    }
   }
 
-  // false on purpose. Passing the controller as `repaint:` subscribes this
-  // painter directly to it, so notifyListeners() repaints without the widget
-  // tree rebuilding at all. This method only governs the case where the widget
-  // itself is rebuilt for some unrelated reason.
+  // Passing the controller as `repaint:` subscribes this painter directly to
+  // it, so notifyListeners() repaints without the widget tree rebuilding at
+  // all. This method only governs the case where the widget itself is rebuilt
+  // for some unrelated reason.
   @override
-  bool shouldRepaint(SkyPainter oldDelegate) => false;
+  bool shouldRepaint(SkyPainter oldDelegate) =>
+      oldDelegate.sky != sky || oldDelegate.topInset != topInset;
 }

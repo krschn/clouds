@@ -1,11 +1,11 @@
 {
-    "name": "cloud_payments",
-    "short_name": "cloud_payments",
+    "name": "Clouds",
+    "short_name": "Clouds",
     "start_url": ".",
     "display": "standalone",
-    "background_color": "#0175C2",
-    "theme_color": "#0175C2",
-    "description": "A new Flutter project.",
+    "background_color": "#EEF2F7",
+    "theme_color": "#123A63",
+    "description": "Clearing repayments, drawn as clouds burning off a sun.",
     "orientation": "portrait-primary",
     "prefer_related_applications": false,
     "icons": [

@@ -1,8 +1,28 @@
-# Cloud Payments
+# Clouds
 
-Clearing monthly repayments, drawn as clouds burning off a sun.
-Every N centavos outstanding is one cloud; clearing a payment evaporates the
-matching clouds and the sun brightens.
+A cloud is a thought you are carrying. The sky fills up when you have a lot on
+your mind; clear things off and the clouds burn away until the sky is empty and
+the sun is out. Many clouds = a crowded head. No clouds = a clear one.
+
+That is the whole idea, and it is meant to extend past money later — anything
+you carry around can be clouds.
+
+## The MVP: bills
+
+The first thing we model is bills, because money is the thought people carry
+most. One month of bills is one sky:
+
+- Each unpaid bill is a cloud card. A bigger bill is more clouds.
+- Pay a bill, cross it out, and its clouds evaporate off the sun.
+- Pay everything and the sky is clear — the point of the app.
+
+A "cloud" is a fixed slice of money (`centavosPerCloud`), picked once when the
+month is created. ₱2,000 owed at ₱500 a cloud is four clouds. Clear it and four
+clouds go.
+
+Everything below is how that is built.
+
+## Layout
 
 ```
 cloud-payments/
@@ -14,24 +34,41 @@ cloud-payments/
 ## Running it
 
 Everything goes through the root `Makefile` (`make help` lists targets).
-Requires Homebrew, Node, pnpm (`brew install pnpm`), and Flutter.
+The app needs only Flutter.
 
 ```bash
-make setup      # once: pnpm + pub deps, backend/.env, Postgres 17 role + database
+make setup      # once: pub deps
 
-make api        # terminal 1 — starts Postgres if needed, then the API on :3000
-make web        # terminal 2 — Chrome on :8080
-make ios        # ...or the iOS simulator
-make android    # ...or a running Android emulator
-make device     # ...or a physical handset on the same Wi-Fi
+make web        # Chrome on :8080
+make ios        # ...or the iOS simulator (boots one if needed)
+make android    # ...or the Android emulator (starts one if needed)
+make device     # ...or a connected physical handset
 
 make test       # both suites against the shared cloud-rule vectors
 ```
 
-The run targets differ only in `API_BASE_URL`: web and the iOS simulator use
-`localhost`, the Android emulator uses `10.0.2.2` (its alias for the host), and
-a physical handset uses this machine's LAN IP. Start the API before the app,
-because the app loads months on boot.
+### Storage: on the device, for now
+
+The app does not talk to the backend. Months and bills are saved on the device
+with `shared_preferences` (`PaymentsLocalDataSource`, one JSON value under
+`clouds.months.v1`), so it runs offline with nothing else started. The local
+source mirrors the API's rules — unique periods, no clearing twice, and the
+same `suggestCentavosPerCloud` ladder, ported to
+`app/lib/features/payments/domain/usecases/`.
+
+The API client, `PaymentsRemoteDataSource` and `PaymentsRepositoryImpl` are
+still in the app, just not wired in. Swapping back is one line in `main.dart`.
+Nothing syncs between the two, so data added on a device stays on it.
+
+### Backend
+
+Still here for work on the API. Needs Homebrew, Node and pnpm
+(`brew install pnpm`).
+
+```bash
+make setup-api  # once: pnpm deps, backend/.env, Postgres 17 role + database
+make api        # starts Postgres if needed, then the API on :3000
+```
 
 `synchronize: true` is on for the prototype, so the schema is built on connect.
 Switch to migrations before anything real lands. `make db-shell` opens psql.
@@ -70,6 +107,17 @@ total painted area (`sqrt(maxClouds / n)`), so twenty clouds cover the same sky
 as twelve and a heavy month reads as finer grain instead of a number to parse.
 The floor is 0.42 — below that they look like lint.
 
+## Big clouds
+
+Every five clouds draw as one big cloud (`group_clouds.dart`). It is display
+only: the count, the caption, the darkness and both `CloudRule`s still work in
+single clouds, so nothing about it crosses the API or the shared vectors.
+
+Clearing into a big cloud splits it — it bursts, and the part still owed flies
+out of it as small clouds. Adding past a multiple of five gathers the loose
+small clouds into a new big one, which is not a clear: no bursts, no haptics
+beyond the landing tap.
+
 ## Why the sky is one painter
 
 Forty clouds as forty `AnimatedPositioned` widgets means forty
@@ -85,18 +133,17 @@ bottleneck anyway.
 
 ## Known rough edges
 
-- **Rollback animation.** A failed clear puts clouds back with the pop-in used
-  for new bills — cheerful, in a moment that should feel like a setback. Wants
-  a dedicated "condense" curve: evaporate played backwards, slower.
-- **Overflow placement.** Clouds past `maxClouds` spiral outward and get
-  clipped by the sky bounds. Fine up to roughly 2× capacity, visibly thin past
-  that.
-- **No auth, no offline queue.** Every mutation assumes connectivity; the
-  optimistic path rolls back rather than retrying.
+- **Very heavy months share spots.** Clouds stack in up to three layers of the
+  month's capacity, all inside the sky. Past that, extra clouds double up on
+  existing spots, so a month far over its estimate looks no busier than one at
+  3× — the caption carries the real count.
+- **No auth, no sync.** The app stores months on the device only; clearing
+  still runs through the optimistic path, which rolls back if the save fails.
+  Moving to the API later needs a one-time import of what devices hold.
 - **`suggestCentavosPerCloud` is a heuristic** and will want tuning against
   real balances. It is one function, called in one place, deliberately.
-- **Month creation isn't wired into the UI.** The drawer selects existing
-  months only; `POST /months` exists but nothing calls it.
+- **Month switches snap.** Changing month swaps the sky's colours instantly
+  rather than fading; the closing drawer covers most of it.
 
 ## API
 

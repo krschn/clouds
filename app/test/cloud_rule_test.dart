@@ -1,7 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:cloud_payments/features/sky/domain/entities/cloud_rule.dart';
+import 'package:clouds/features/sky/domain/entities/cloud_rule.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Reads the same fixture as backend/src/sky/domain/cloud-rule.spec.ts.

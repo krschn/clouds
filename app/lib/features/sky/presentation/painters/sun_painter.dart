@@ -2,39 +2,140 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 
+import '../controllers/sky_controller.dart';
+import 'sky_palette.dart';
+import 'sun_shape.dart';
+
+/// Everything behind the clouds: the sky itself, the sun's warm glow, the
+/// all-clear rings, and the flame-ringed sun.
+///
+/// Subscribed to the controller like SkyPainter, so the sun's pulse and the
+/// sky's colour animate without rebuilding any widgets.
 class SunPainter extends CustomPainter {
-  const SunPainter({required this.clarity});
+  SunPainter(this.sky, {this.topInset = 0}) : super(repaint: sky);
 
-  /// 0 = fully obscured, 1 = clear sky.
-  final double clarity;
+  final SkyController sky;
 
-  static const Color _core = Color(0xFFEF9F27);
-  static const Color _ray = Color(0xFFFAC775);
+  /// The notch or status bar height. The sky's colour fills behind it; the
+  /// sun is laid out below it.
+  final double topInset;
+
+  /// The flames at a disc radius of 1, built once. Each frame scales and
+  /// rotates this rather than rebuilding it.
+  static final Path _flames = buildSunFlames(radius: 1);
 
   @override
   void paint(Canvas canvas, Size size) {
-    final c = Offset(size.width / 2, size.height / 2);
-    final r = size.shortestSide * 0.22 * (1 + 0.12 * clarity);
+    final palette = paletteFor(sky.gloom);
+    final clarity = sky.clarity;
+    final charge = sky.charge;
+    final f = sky.finale;
+    final rect = Offset.zero & size;
 
-    final rays = Paint()
-      ..color = _ray.withValues(alpha: 0.3 + 0.7 * clarity)
-      ..strokeWidth = size.shortestSide * 0.025
-      ..strokeCap = StrokeCap.round;
+    canvas.drawRect(
+      rect,
+      Paint()
+        ..shader = LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [palette.skyTop, palette.skyBottom],
+        ).createShader(rect),
+    );
 
-    for (var i = 0; i < 8; i++) {
-      final a = i * math.pi / 4;
-      final inner = r * 1.35;
-      final outer = inner + size.shortestSide * 0.06 * (0.6 + 0.4 * clarity);
-      canvas.drawLine(
-        c + Offset(math.cos(a) * inner, math.sin(a) * inner),
-        c + Offset(math.cos(a) * outer, math.sin(a) * outer),
-        rays,
+    final sun = sunLayout(size, topInset: topInset);
+    final c = sun.center;
+
+    // Rises and falls back over the celebration, overshooting early.
+    final bloom = f > 0 && f < 1 ? math.sin(math.pi * f) * (1 - 0.4 * f) : 0.0;
+
+    final glowRadius = size.longestSide * (0.55 + 0.25 * bloom);
+    final glowAlpha =
+        (palette.glow.a * (0.55 * clarity + 0.35 * bloom)).clamp(0.0, 1.0);
+    canvas.drawCircle(
+      c,
+      glowRadius,
+      Paint()
+        ..shader = RadialGradient(
+          colors: [
+            palette.glow.withValues(alpha: glowAlpha),
+            palette.glow.withValues(alpha: 0),
+          ],
+        ).createShader(Rect.fromCircle(center: c, radius: glowRadius)),
+    );
+
+    if (charge > 0) {
+      // A clear being pushed: warm light breaking through whatever the gloom.
+      // The sky's own glow fades out in a storm, so this one does not follow
+      // the palette.
+      final chargeRadius = sun.radius * (2.2 + 1.2 * charge);
+      canvas.drawCircle(
+        c,
+        chargeRadius,
+        Paint()
+          ..shader = RadialGradient(
+            colors: [
+              _chargeGlow.withValues(alpha: 0.75 * charge),
+              _chargeGlow.withValues(alpha: 0),
+            ],
+          ).createShader(Rect.fromCircle(center: c, radius: chargeRadius)),
       );
     }
 
-    canvas.drawCircle(c, r, Paint()..color = _core);
+    if (f > 0 && f < 1) {
+      // Two rings, the second a beat behind, spreading past the sky's edge.
+      for (final lag in const [0.0, 0.18]) {
+        final k = ((f - lag) / (1 - lag)).clamp(0.0, 1.0);
+        if (k <= 0 || k >= 1) continue;
+        final spread = Curves.easeOutCubic.transform(k);
+        canvas.drawCircle(
+          c,
+          sun.radius * 1.5 + spread * size.longestSide * 0.9,
+          Paint()
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = size.shortestSide * 0.05 * (1 - k)
+            ..color = Colors.white.withValues(alpha: 0.55 * (1 - k)),
+        );
+      }
+    }
+
+    final pulse = sky.sunPulse.clamp(-0.6, sunPulseMax);
+    // Every factor here is bounded by maxSunSwell, which is what sunLayout
+    // sized the sun against. Grow it past that and the flames reach the notch.
+    final r = sun.radius *
+        (1 + sunClaritySwell * clarity) *
+        (1 + sunPulseSwell * pulse) *
+        (1 + sunBloomSwell * bloom);
+
+    // One tongue's turn over the finale. The ring repeats every tongue, so the
+    // end pose matches the start and nothing snaps afterwards.
+    final spin = Curves.easeInOutCubic.transform(f) * 2 * math.pi / sunTongues;
+
+    // Charge restores the clear-day colour and full flames. It never grows the
+    // sun: the size factors above are what keep the flames off the notch.
+    final core = Color.lerp(palette.sunCore, _clearCore, 0.8 * charge)!;
+    final flameStrength = math.max(clarity, charge);
+
+    canvas.save();
+    canvas.translate(c.dx, c.dy);
+    canvas.rotate(spin);
+    canvas.scale(r);
+    canvas.drawPath(
+      _flames,
+      Paint()
+        ..isAntiAlias = true
+        // Flames fade back in a storm more than the disc does, so a heavy
+        // month reads as a sun smothered rather than just a darker one.
+        ..color = core.withValues(alpha: 0.55 + 0.45 * flameStrength),
+    );
+    canvas.restore();
+
+    canvas.drawCircle(c, r, Paint()..color = core);
   }
 
+  static const Color _chargeGlow = Color(0xFFFFE2A6);
+  static final Color _clearCore = paletteFor(0).sunCore;
+
   @override
-  bool shouldRepaint(SunPainter old) => old.clarity != clarity;
+  bool shouldRepaint(SunPainter oldDelegate) =>
+      oldDelegate.sky != sky || oldDelegate.topInset != topInset;
 }
