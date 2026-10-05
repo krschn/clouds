@@ -1,8 +1,28 @@
 # Clouds
 
-Clearing monthly repayments, drawn as clouds burning off a sun.
-Every N centavos outstanding is one cloud; clearing a payment evaporates the
-matching clouds and the sun brightens.
+A cloud is a thought you are carrying. The sky fills up when you have a lot on
+your mind; clear things off and the clouds burn away until the sky is empty and
+the sun is out. Many clouds = a crowded head. No clouds = a clear one.
+
+That is the whole idea, and it is meant to extend past money later — anything
+you carry around can be clouds.
+
+## The MVP: bills
+
+The first thing we model is bills, because money is the thought people carry
+most. One month of bills is one sky:
+
+- Each unpaid bill is a cloud card. A bigger bill is more clouds.
+- Pay a bill, cross it out, and its clouds evaporate off the sun.
+- Pay everything and the sky is clear — the point of the app.
+
+A "cloud" is a fixed slice of money (`centavosPerCloud`), picked once when the
+month is created. ₱2,000 owed at ₱500 a cloud is four clouds. Clear it and four
+clouds go.
+
+Everything below is how that is built.
+
+## Layout
 
 ```
 cloud-payments/
